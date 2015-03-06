@@ -35,7 +35,10 @@
                       '<table><tbody>' +
                         '<tr ng-repeat="hotkey in hotkeys | filter:{ description: \'!$$undefined$$\' }">' +
                           '<td class="cfp-hotkeys-keys">' +
-                            '<span ng-repeat="key in hotkey.format() track by $index" class="cfp-hotkeys-key">{{ key }}</span>' +
+                            '<span ng-repeat="sequence in hotkey.format() track by $index">' +
+                              '<span ng-repeat="key in sequence track by $index" class="cfp-hotkeys-key">{{ key }}</span>' +
+                              '<span ng-if="!$last">/ </span>' +
+                            '</span>' +
                           '</td>' +
                           '<td class="cfp-hotkeys-text">{{ hotkey.description }}</td>' +
                         '</tr>' +
@@ -129,23 +132,28 @@
       /**
        * Helper method to format (symbolize) the key combo for display
        *
-       * @return {[Array]} An array of the key combination sequence
-       *   for example: "command+g c i" becomes ["⌘ + g", "c", "i"]
+       * @return {[Array]} An array of the key combination sequences
+       *   for example: "command+g c i" becomes [["⌘ + g", "c", "i"]]
+       *   ["shift+g g", "command+g c i"] becomes [["⇧ + g", "g"], ["⌘ + g", "c", "i"]]
        *
-       * TODO: this gets called a lot.  We should cache the result
        */
       Hotkey.prototype.format = function() {
+        if (this.formatCache)
+          return this.formatCache;
 
-        // Don't show all the possible key combos, just the first one.  Not sure
-        // of usecase here, so open a ticket if my assumptions are wrong
-        var combo = this.combo[0];
+        this.formatCache = [];
 
-        var sequence = combo.split(/[\s]/);
-        for (var i = 0; i < sequence.length; i++) {
-          sequence[i] = symbolize(sequence[i]);
+        var combo = this.combo;
+
+        for (var i = 0; i < combo.length; i++) {
+          var sequence = combo[i].split(/[\s]/);
+          for (var j = 0; j < sequence.length; j++) {
+            sequence[j] = symbolize(sequence[j]);
+          }
+          this.formatCache.push(sequence);
         }
 
-        return sequence;
+        return this.formatCache;
       };
 
       /**
